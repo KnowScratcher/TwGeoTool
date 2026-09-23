@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'feature/page/home.dart';
+import 'package:twgeo/page/home.dart';
+import 'package:twgeo/service/location.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  LocationService.startListening().catchError((error) {
+    debugPrint('Location error: $error');
+  });
   runApp(const GeoTwApp());
 }
 

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:twgeo/page/map.dart';
+import 'package:twgeo/service/location.dart';
 
 class GeoHomeScreen extends StatelessWidget {
   const GeoHomeScreen({super.key});
@@ -145,78 +148,90 @@ class GeoHomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
 
               // Coordinates & Elevation
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildCard(
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '25.143287N',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '121.328479E',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'GPS',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
+              ValueListenableBuilder<Position?>(
+                valueListenable: currentPositionNotifier,
+                builder: (context, position, child) {
+                  final lat = position != null
+                      ? '${position.latitude.toStringAsFixed(6)}N'
+                      : '...';
+                  final lng = position != null
+                      ? '${position.longitude.toStringAsFixed(6)}E'
+                      : '...';
+                  final alt = position != null
+                      ? '${position.altitude.toStringAsFixed(0)}m'
+                      : '...';
 
-                      fillColor: const Color(0xff040f4d),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildCard(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '25m',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _buildCard(
+                          fillColor: const Color(0xff040f4d),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                lat,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                lng,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'GPS',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 12),
-                          Text(
-                            '海拔',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                      fillColor: const Color(0xff040f4d),
-                      padding: const EdgeInsets.symmetric(vertical: 28),
-                    ),
-                  ),
-                ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildCard(
+                          fillColor: const Color(0xff040f4d),
+                          padding: const EdgeInsets.symmetric(vertical: 28),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                alt,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                '海拔',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
 
@@ -226,7 +241,11 @@ class GeoHomeScreen extends StatelessWidget {
                   Expanded(
                     child: _buildCard(
                       onTap: () {
-                        print("tap");
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const MapPage(),
+                          ),
+                        );
                       },
                       fillColor: const Color(0xff808080),
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -253,7 +272,7 @@ class GeoHomeScreen extends StatelessWidget {
                   Expanded(
                     child: _buildCard(
                       onTap: () {
-                        print("tap");
+                        //TODO: add clino
                       },
                       fillColor: const Color(0xff808080),
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -297,7 +316,7 @@ class GeoHomeScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
