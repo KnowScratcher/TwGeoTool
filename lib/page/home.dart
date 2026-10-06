@@ -21,7 +21,8 @@ class _GeoHomeScreenState extends State<GeoHomeScreen> {
   String _currentEpochName = '...';
   String _currentRockName = '...';
   String _currentRockType = '...';
-  LatLng _lastPostion = LatLng(0, 0);
+  LatLng _lastPosition = LatLng(0, 0);
+  int _lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
   final distance = Distance();
 
   Map<String, String> _buildGeologyInfo(String tooltipText) {
@@ -239,12 +240,14 @@ class _GeoHomeScreenState extends State<GeoHomeScreen> {
                     position!.latitude,
                     position.longitude,
                   );
-                  if (distance.as(LengthUnit.Meter, currentPos, _lastPostion) >
-                      50) {
+                  int timeNow = DateTime.now().millisecondsSinceEpoch;
+                  if (distance.as(LengthUnit.Meter, currentPos, _lastPosition) >
+                      50 && timeNow - _lastUpdateTime > 1000) {
+                    _lastUpdateTime = timeNow;
                     _fetchCurrentArea(
-                      LatLng(position!.latitude, position.longitude),
+                      LatLng(position.latitude, position.longitude),
                     );
-                    _lastPostion = currentPos;
+                    _lastPosition = currentPos;
                   }
 
                   return Row(
