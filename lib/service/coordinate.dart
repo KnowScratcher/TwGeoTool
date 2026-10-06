@@ -5,8 +5,7 @@ class TaiwanGeoConverter {
   static final Projection _wgs84 = Projection.get('EPSG:4326')!;
 
   static final Projection _twd97 = Projection.parse(
-    '+proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 '
-        '+ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs',
+    '+proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs',
   );
 
   /// Transforms WGS84 (latitude, longitude) to TWD97 (X, Y) in meters

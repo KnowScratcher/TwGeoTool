@@ -1,10 +1,85 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:twgeo/page/map.dart';
 import 'package:twgeo/service/location.dart';
 
-class GeoHomeScreen extends StatelessWidget {
+import 'package:twgeo/service/coordinate.dart';
+
+class GeoHomeScreen extends StatefulWidget {
   const GeoHomeScreen({super.key});
+
+  @override
+  State<GeoHomeScreen> createState() => _GeoHomeScreenState();
+}
+
+class _GeoHomeScreenState extends State<GeoHomeScreen> {
+  String _currentAreaName = '...';
+  String _currentEpochName = '...';
+  String _currentRockName = '...';
+  String _currentRockType = '...';
+  LatLng _lastPostion = LatLng(0, 0);
+  final distance = Distance();
+
+  Map<String, String> _buildGeologyInfo(String tooltipText) {
+    final lines = tooltipText.split('\n');
+    final info = <String, String>{};
+    for (final line in lines) {
+      final parts = line.split('：');
+      if (parts.length > 1) {
+        info[parts.first] = parts.sublist(1).join('：');
+      }
+    }
+    return info;
+  }
+
+  Future<void> _fetchCurrentArea(LatLng location) async {
+    Map<String, dynamic>? nameData;
+    Map<String, dynamic>? geoData;
+    Map<String, String>? parsedGeoData;
+    final nameUrl = Uri.parse(
+      "https://nominatim.openstreetmap.org/reverse?zoom=10&lat=${location.latitude.toStringAsFixed(6)}&lon=${location.longitude.toStringAsFixed(6)}&format=json",
+    );
+    final convertedPoint = TaiwanGeoConverter.wgs84ToTwd97(point: location);
+    final geoUrl = Uri.parse(
+      "https://geomap.gsmma.gov.tw/api/Tile/v1/getTooltip.cfm?layer=TYPE3&srs=EPSG%3A3857&z=17&x=${convertedPoint.x.toStringAsFixed(0)}&y=${convertedPoint.y.toStringAsFixed(0)}",
+    );
+    final nameResponse = await http
+        .get(
+          nameUrl,
+          headers: {
+            'User-Agent':
+                'GeoTWApp/1.0 (com.ks.geotw;)',
+            'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+          },
+        )
+        .timeout(const Duration(seconds: 10));
+    final geoResponse = await http
+        .get(geoUrl)
+        .timeout(const Duration(seconds: 10));
+    print(nameResponse.statusCode);
+    if (nameResponse.statusCode == 200) {
+      final decodedString = utf8.decode(nameResponse.bodyBytes);
+      final cleanedString = decodedString.replaceAll(RegExp(r' {2,}'), ' ');
+      nameData = json.decode(cleanedString);
+    }
+    if (geoResponse.statusCode == 200) {
+      final decodedString = utf8.decode(geoResponse.bodyBytes);
+      final cleanedString = decodedString.replaceAll(RegExp(r' {2,}'), ' ');
+      geoData = json.decode(cleanedString);
+      parsedGeoData = _buildGeologyInfo(geoData?['tooltip']);
+    }
+    setState(() {
+      print(nameData);
+      _currentAreaName = nameData?['name'] ?? '未知';
+      _currentEpochName = parsedGeoData?['地質年代']?.split("(").first ?? '未知';
+      _currentRockName = parsedGeoData?['地層名稱']?.split("(").first ?? '未知';
+      _currentRockType = parsedGeoData?['地層組成']?.split("(").first ?? '未知';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +103,8 @@ class GeoHomeScreen extends StatelessWidget {
               _buildCard(
                 child: Column(
                   children: [
-                    const Text(
-                      '台北',
+                    Text(
+                      _currentAreaName,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 32,
@@ -62,8 +137,8 @@ class GeoHomeScreen extends StatelessWidget {
                     child: _buildCard(
                       child: Column(
                         children: [
-                          const Text(
-                            '古新世',
+                          Text(
+                            _currentEpochName,
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 25, color: Colors.white),
                           ),
@@ -89,14 +164,14 @@ class GeoHomeScreen extends StatelessWidget {
                     child: _buildCard(
                       child: Column(
                         children: [
-                          const Text(
-                            '沉積岩',
+                          Text(
+                            _currentRockName,
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 25, color: Colors.white),
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            '岩性',
+                            '地層名稱',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 10,
@@ -119,8 +194,8 @@ class GeoHomeScreen extends StatelessWidget {
               _buildCard(
                 child: Column(
                   children: [
-                    const Text(
-                      '砂岩、頁岩',
+                    Text(
+                      _currentRockType,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 25,
@@ -160,6 +235,17 @@ class GeoHomeScreen extends StatelessWidget {
                   final alt = position != null
                       ? '${position.altitude.toStringAsFixed(0)}m'
                       : '...';
+                  final currentPos = LatLng(
+                    position!.latitude,
+                    position.longitude,
+                  );
+                  if (distance.as(LengthUnit.Meter, currentPos, _lastPostion) >
+                      50) {
+                    _fetchCurrentArea(
+                      LatLng(position!.latitude, position.longitude),
+                    );
+                    _lastPostion = currentPos;
+                  }
 
                   return Row(
                     children: [

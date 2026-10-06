@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:twgeo/service/location.dart';
 import 'package:twgeo/service/coordinate.dart';
+import 'package:twgeo/service/offlineTile.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -22,21 +23,37 @@ class _MapPageState extends State<MapPage> {
   Map<String, dynamic>? _geologyData;
   bool _isLoading = false;
   double _sheetExtent = 0.0;
+  bool _isSheetVisible = false;
+  bool _showInfoPointer = false;
+  LatLng _infoPoint = LatLng(0, 0);
 
   @override
   void initState() {
     super.initState();
     // Track panel extent to fade in/out top controls and trigger full-screen UI
     _sheetController.addListener(() {
+      final double currentSize = _sheetController.size;
       setState(() {
-        _sheetExtent = _sheetController.size;
+        _sheetExtent = currentSize;
       });
+
+      if (currentSize <= 0.01 && _isSheetVisible) {
+        setState(() {
+          _isSheetVisible = false;
+          _showInfoPointer = false;
+        });
+      } else if (currentSize > 0.01 && !_isSheetVisible) {
+        setState(() {
+          _isSheetVisible = true;
+        });
+      }
     });
   }
 
   @override
   void dispose() {
     _sheetController.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -45,6 +62,8 @@ class _MapPageState extends State<MapPage> {
     setState(() {
       _isLoading = true;
       _geologyData = null;
+      _showInfoPointer = true;
+      _infoPoint = point;
     });
 
     // Open panel to partial height while loading
@@ -56,9 +75,12 @@ class _MapPageState extends State<MapPage> {
 
     try {
       // Replace with your server URL
+      print(point);
+      final zoom = _mapController.camera.zoom;
       final convertedPoint = TaiwanGeoConverter.wgs84ToTwd97(point: point);
+      print(convertedPoint);
       final url = Uri.parse(
-        "https://geomap.gsmma.gov.tw/api/Tile/v1/getTooltip.cfm?layer=TYPE3&srs=EPSG%3A3857&z=12&x=${convertedPoint.x.toStringAsFixed(0)}&y=${convertedPoint.y.toStringAsFixed(0)}",
+        "https://geomap.gsmma.gov.tw/api/Tile/v1/getTooltip.cfm?layer=TYPE3&srs=EPSG%3A3857&z=${zoom.toStringAsFixed(0)}&x=${convertedPoint.x.toStringAsFixed(0)}&y=${convertedPoint.y.toStringAsFixed(0)}",
       );
       final response = await http.get(url).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
@@ -97,7 +119,7 @@ class _MapPageState extends State<MapPage> {
                   initialCenter: (position != null
                       ? currentLatLng
                       : const LatLng(25.0330, 121.5654)),
-                  initialZoom: 13.0,
+                  initialZoom: 12.0,
                   maxZoom: 17.0,
                   minZoom: 7.0,
                   onTap: (tapPosition, point) => _fetchGeologyData(point),
@@ -113,14 +135,7 @@ class _MapPageState extends State<MapPage> {
                     child: TileLayer(
                       urlTemplate:
                           'https://geomap.gsmma.gov.tw/api/Tile/v1/getTile.cfm?layer=CGS_CGS_MAP&z={z}&x={x}&y={y}',
-                      tileProvider: NetworkTileProvider(
-                        cachingProvider:
-                            BuiltInMapCachingProvider.getOrCreateInstance(
-                              overrideFreshAge: const Duration(
-                                days: 7,
-                              ), // Forces a valid cache age
-                            ),
-                      ),
+                      tileProvider: OfflineTileProvider(),
                       userAgentPackageName: 'com.ks.geotw',
                     ),
                   ),
@@ -147,6 +162,16 @@ class _MapPageState extends State<MapPage> {
                               ),
                             ],
                           ),
+                        ),
+                      ],
+                    ),
+                  if (_showInfoPointer)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _infoPoint,
+                          alignment: Alignment(-0.7,-2),
+                          child: Icon(Icons.location_pin, size: 50,),
                         ),
                       ],
                     ),
