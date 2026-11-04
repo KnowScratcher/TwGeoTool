@@ -22,7 +22,7 @@ class _GeoHomeScreenState extends State<GeoHomeScreen> {
   String _currentRockName = '...';
   String _currentRockType = '...';
   LatLng _lastPosition = LatLng(0, 0);
-  int _lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
+  int _lastUpdateTime = 0;
   final distance = Distance();
 
   Map<String, String> _buildGeologyInfo(String tooltipText) {
