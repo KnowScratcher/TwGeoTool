@@ -170,8 +170,8 @@ class _MapPageState extends State<MapPage> {
                       markers: [
                         Marker(
                           point: _infoPoint,
-                          alignment: Alignment(-0.7,-2),
-                          child: Icon(Icons.location_pin, size: 50,),
+                          alignment: Alignment(-0.7, -2),
+                          child: Icon(Icons.location_pin, size: 50),
                         ),
                       ],
                     ),
@@ -231,6 +231,17 @@ class _MapPageState extends State<MapPage> {
                         ),
                       ),
                     ),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                bottom: 5,
+                left: 5,
+                child: SafeArea(
+                  child: Text(
+                    "© OpenStreetMap contributors",
+                    style: TextStyle(color: Colors.black),
                   ),
                 ),
               ),
