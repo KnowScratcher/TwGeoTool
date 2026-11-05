@@ -38,7 +38,7 @@ class LocationService {
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
+        distanceFilter: 2,
       ),
     ).listen((position) {
       currentPositionNotifier.value = position;
