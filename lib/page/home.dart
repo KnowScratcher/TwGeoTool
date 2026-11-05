@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:twgeo/page/clino.dart';
 import 'package:twgeo/page/map.dart';
 import 'package:twgeo/service/location.dart';
 
@@ -52,8 +53,7 @@ class _GeoHomeScreenState extends State<GeoHomeScreen> {
         .get(
           nameUrl,
           headers: {
-            'User-Agent':
-                'GeoTWApp/1.0 (com.ks.geotw;)',
+            'User-Agent': 'GeoTWApp/1.0 (com.ks.geotw;)',
             'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
           },
         )
@@ -228,26 +228,33 @@ class _GeoHomeScreenState extends State<GeoHomeScreen> {
                 valueListenable: currentPositionNotifier,
                 builder: (context, position, child) {
                   final lat = position != null
-                      ? '${position.latitude.toStringAsFixed(6)}N'
+                      ? '${position.latitude.toStringAsFixed(6)}${position.latitude >= 0? "N" : "S"}'
                       : '...';
                   final lng = position != null
-                      ? '${position.longitude.toStringAsFixed(6)}E'
+                      ? '${position.longitude.toStringAsFixed(6)}${position.longitude >= 0? "E" : "W"}'
                       : '...';
                   final alt = position != null
                       ? '${position.altitude.toStringAsFixed(0)}m'
                       : '...';
-                  final currentPos = LatLng(
-                    position!.latitude,
-                    position.longitude,
-                  );
-                  int timeNow = DateTime.now().millisecondsSinceEpoch;
-                  if (distance.as(LengthUnit.Meter, currentPos, _lastPosition) >
-                      50 && timeNow - _lastUpdateTime > 1000) {
-                    _lastUpdateTime = timeNow;
-                    _fetchCurrentArea(
-                      LatLng(position.latitude, position.longitude),
+                  if (position != null) {
+                    final currentPos = LatLng(
+                      position.latitude,
+                      position.longitude,
                     );
-                    _lastPosition = currentPos;
+                    int timeNow = DateTime.now().millisecondsSinceEpoch;
+                    if (distance.as(
+                              LengthUnit.Meter,
+                              currentPos,
+                              _lastPosition,
+                            ) >
+                            50 &&
+                        timeNow - _lastUpdateTime > 1000) {
+                      _lastUpdateTime = timeNow;
+                      _fetchCurrentArea(
+                        LatLng(position.latitude, position.longitude),
+                      );
+                      _lastPosition = currentPos;
+                    }
                   }
 
                   return Row(
@@ -361,7 +368,11 @@ class _GeoHomeScreenState extends State<GeoHomeScreen> {
                   Expanded(
                     child: _buildCard(
                       onTap: () {
-                        //TODO: add clino
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const Clino(),
+                          ),
+                        );
                       },
                       fillColor: const Color(0xff808080),
                       padding: const EdgeInsets.symmetric(vertical: 20),
