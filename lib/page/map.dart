@@ -21,6 +21,7 @@ class _MapPageState extends State<MapPage> {
       DraggableScrollableController();
 
   Map<String, dynamic>? _geologyData;
+  Map<String, dynamic>? _attitudeData;
   bool _isLoading = false;
   double _sheetExtent = 0.0;
   bool _isSheetVisible = false;
@@ -83,14 +84,36 @@ class _MapPageState extends State<MapPage> {
         "https://geomap.gsmma.gov.tw/api/Tile/v1/getTooltip.cfm?layer=TYPE3&srs=EPSG%3A3857&z=${zoom.toStringAsFixed(0)}&x=${convertedPoint.x.toStringAsFixed(0)}&y=${convertedPoint.y.toStringAsFixed(0)}",
       );
       final response = await http.get(url).timeout(const Duration(seconds: 10));
+      final url2 = Uri.parse(
+        "https://geomap.gsmma.gov.tw/api/Tile/v1/getTooltip.cfm?layer=CGS_MAP_DIP_STRIKE&srs=EPSG%3A3857&z=${zoom.toStringAsFixed(0)}&x=${convertedPoint.x.toStringAsFixed(0)}&y=${convertedPoint.y.toStringAsFixed(0)}",
+      );
+      final response2 = await http
+          .get(url2)
+          .timeout(const Duration(seconds: 10));
+
+      Map<String, dynamic>? geologyResult;
+      Map<String, dynamic>? attitudeResult;
       if (response.statusCode == 200) {
         final decodedString = utf8.decode(response.bodyBytes);
         final cleanedString = decodedString.replaceAll(RegExp(r' {2,}'), ' ');
         final Map<String, dynamic> data = json.decode(cleanedString);
-        setState(() {
-          _geologyData = data;
-        });
+        geologyResult = data;
       }
+      if (response2.statusCode == 200) {
+        final decodedString = utf8.decode(response2.bodyBytes);
+        final cleanedString = decodedString
+            .replaceAll(RegExp(r' {2,}'), ' ')
+            .replaceAll(RegExp(r'\n'), '')
+            .replaceAll(RegExp(r'\\\\n'), '\\n')
+            .replaceAll(RegExp(r'傾斜:'), '\\n傾斜:')
+            .replaceAll(RegExp(r': '), '：');
+        final Map<String, dynamic> data = json.decode(cleanedString);
+        attitudeResult = data;
+      }
+      setState(() {
+        _geologyData = geologyResult;
+        _attitudeData = attitudeResult;
+      });
     } catch (e) {
       // error handling
     } finally {
@@ -128,6 +151,9 @@ class _MapPageState extends State<MapPage> {
                   TileLayer(
                     urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    tileUpdateTransformer: TileUpdateTransformers.throttle(
+                      const Duration(milliseconds: 300),
+                    ),
                     userAgentPackageName: 'com.ks.geotw',
                   ),
                   Opacity(
@@ -136,6 +162,21 @@ class _MapPageState extends State<MapPage> {
                       urlTemplate:
                           'https://geomap.gsmma.gov.tw/api/Tile/v1/getTile.cfm?layer=CGS_CGS_MAP&z={z}&x={x}&y={y}',
                       tileProvider: OfflineTileProvider(),
+                      tileUpdateTransformer: TileUpdateTransformers.debounce(
+                        const Duration(milliseconds: 500),
+                      ),
+                      userAgentPackageName: 'com.ks.geotw',
+                    ),
+                  ),
+                  Opacity(
+                    opacity: 0.6,
+                    child: TileLayer(
+                      urlTemplate:
+                          'https://geomap.gsmma.gov.tw/api/Tile/v1/getTile.cfm?layer=CGS_MAP_DIP_STRIKE&z={z}&x={x}&y={y}',
+                      tileProvider: OfflineTileProvider(),
+                      tileUpdateTransformer: TileUpdateTransformers.debounce(
+                        const Duration(milliseconds: 500),
+                      ),
                       userAgentPackageName: 'com.ks.geotw',
                     ),
                   ),
@@ -240,7 +281,7 @@ class _MapPageState extends State<MapPage> {
                 left: 5,
                 child: SafeArea(
                   child: Text(
-                    "© OpenStreetMap contributors",
+                    "© OpenStreetMap contributors\n經濟部地質調查與礦業管理中心",
                     style: TextStyle(color: Colors.black),
                   ),
                 ),
@@ -303,7 +344,10 @@ class _MapPageState extends State<MapPage> {
                                 ),
                               )
                             else if (_geologyData != null)
-                              ..._buildGeologyContent(_geologyData!["tooltip"])
+                              ..._buildGeologyContent(
+                                _geologyData!["tooltip"],
+                                _attitudeData!["tooltip"],
+                              )
                             else
                               const Text(
                                 '點擊地圖以查詢地質資料',
@@ -366,9 +410,33 @@ class _MapPageState extends State<MapPage> {
   }
 
   /// Helper to format raw tooltip string into structured UI tiles
-  List<Widget> _buildGeologyContent(String tooltipText) {
-    final lines = tooltipText.split('\n');
-    return lines.map((line) {
+  List<Widget> _buildGeologyContent(String tooltipText1, String tooltipText2) {
+    List<String> lines2 = [];
+    if (tooltipText2 != "") {
+      lines2 = tooltipText2.split("\n").sublist(1);
+    }
+    final lines1 = tooltipText1.split('\n');
+    Padding _buildTitle(String title) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFF8E44AD),
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 2),
+          ],
+        ),
+      );
+    }
+
+    final line1List = lines1.map((line) {
       final parts = line.split('：');
       final title = parts.first;
       final body = parts.length > 1 ? parts.sublist(1).join('：') : '';
@@ -400,5 +468,48 @@ class _MapPageState extends State<MapPage> {
         ),
       );
     }).toList();
+
+    final line2List = <Widget>[];
+    for (final line in lines2) {
+      final parts = line.split('：');
+      final title = parts.first;
+      final body = parts.length > 1 ? parts.sublist(1).join('：') : '';
+      if (body.isEmpty) continue;
+      line2List.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFF8E44AD),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                body.isNotEmpty ? body : line,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  height: 1.3,
+                ),
+              ),
+              const Divider(color: Color(0xFF3F3F46), height: 16),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return [
+      _buildTitle("地層資訊"),
+      ...line1List,
+      _buildTitle("位態資訊"),
+      ...line2List,
+    ];
   }
 }
