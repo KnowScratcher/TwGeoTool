@@ -111,42 +111,40 @@ class _ClinoState extends State<Clino> {
                     color: const Color(0xff040f4d),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  child: Column(
                     children: [
-                      Text(
-                        '緯度: ${currentLatLng.latitude.toStringAsFixed(6)}${currentLatLng.latitude >= 0 ? "N" : "S"}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Text(
+                            '緯度: ${currentLatLng.latitude.toStringAsFixed(6)}${currentLatLng.latitude >= 0 ? "N" : "S"}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            '經度: ${currentLatLng.longitude.toStringAsFixed(6)}${currentLatLng.longitude >= 0 ? "E" : "W"}',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '經度: ${currentLatLng.longitude.toStringAsFixed(6)}${currentLatLng.longitude >= 0 ? "E" : "W"}',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Text(
+                            '指北針準確度: $accuracyText',
+                            style: TextStyle(
+                              color: accuracyTextColor,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xff040f4d),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Text(
-                        '指北針準確度: ${accuracyText}',
-                        style: TextStyle(
-                          color: accuracyTextColor,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+
                 const Spacer(),
                 SizedBox(
                   width: 300,
@@ -179,7 +177,7 @@ class _ClinoState extends State<Clino> {
                         );
                       }),
                       Transform.rotate(
-                        angle: -_angle,
+                        angle: _dipAngle >= 2 ? -_angle : 0,
                         child: CustomPaint(
                           size: const Size(300, 300),
                           painter: TSymbolPainter(type: type),
@@ -284,8 +282,8 @@ class TSymbolPainter extends CustomPainter {
       canvas.drawLine(center, Offset(center.dx + 45, center.dy), paint);
     } else {
       canvas.drawLine(
-        Offset(center.dx - 45, center.dy),
-        Offset(center.dx + 45, center.dy),
+        Offset(center.dx - 110, center.dy),
+        Offset(center.dx + 110, center.dy),
         paint,
       );
     }
