@@ -183,7 +183,7 @@ class _ClinoState extends State<Clino> {
                           return Transform.rotate(
                             angle: angle,
                             child: Align(
-                              alignment: Alignment(0.0, -0.9),
+                              alignment: Alignment(0.0, -0.87),
                               child: Transform.rotate(
                                 angle: -angle,
                                 child: Text(
