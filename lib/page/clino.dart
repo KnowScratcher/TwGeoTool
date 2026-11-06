@@ -23,6 +23,7 @@ class _ClinoState extends State<Clino> {
   double _angle = 0.0;
   double _dipAngle = 0.0;
   bool _isUpSideDown = false;
+  bool _isAbsolute = false;
   double? _accuracy;
   StreamSubscription<CompassEvent?>? _compassSubscription;
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
@@ -71,8 +72,7 @@ class _ClinoState extends State<Clino> {
 
   @override
   Widget build(BuildContext context) {
-    final strikeValue =
-        ((_angle * 180 / math.pi).abs() % 360 + _compassAngle + 360) % 360;
+    final strikeValue = (-(_angle * 180 / math.pi) + _compassAngle + 360) % 360;
     final type = _dipAngle < 2 ? 0 : (!_isUpSideDown ? 1 : 2);
     final accuracyText = (_accuracy == null)
         ? "不可用"
@@ -162,22 +162,48 @@ class _ClinoState extends State<Clino> {
                           ),
                         ),
                       ),
-                      ...List.generate(8, (index) {
-                        final angle = index * math.pi / 4;
+                      ...List.generate(72, (index) {
+                        final angle = index * math.pi / 36;
                         return Transform.rotate(
                           angle: angle,
                           child: Align(
                             alignment: Alignment.topCenter,
                             child: Container(
-                              width: 2,
-                              height: 12,
+                              width: 2 + (index % 9 == 0 ? 2 : 0),
+                              height: 12 + (index % 9 == 0 ? 5 : 0) - (index % 2 == 1 ? 3 : 0),
                               color: Colors.white70,
                             ),
                           ),
                         );
                       }),
+                      if (_isAbsolute)
+                        ...List.generate(4, (index) {
+                          final angle = index * math.pi / 2;
+                          const List<String> directions = ["N", "E", "S", "W"];
+                          return Transform.rotate(
+                            angle: angle,
+                            child: Align(
+                              alignment: Alignment(0.0, -0.9),
+                              child: Transform.rotate(
+                                angle: -angle,
+                                child: Text(
+                                  directions[index],
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+
                       Transform.rotate(
-                        angle: _dipAngle >= 2 ? -_angle : 0,
+                        angle: _dipAngle >= 2
+                            ? (_isAbsolute
+                                  ? strikeValue / (180 / math.pi)
+                                  : -_angle)
+                            : 0,
                         child: CustomPaint(
                           size: const Size(300, 300),
                           painter: TSymbolPainter(type: type),
@@ -185,6 +211,20 @@ class _ClinoState extends State<Clino> {
                       ),
                     ],
                   ),
+                ),
+                const Spacer(),
+                TextButton(
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.all<Color>(
+                      Colors.purple[600]!,
+                    ),
+                  ),
+                  onPressed: () => {
+                    setState(() {
+                      _isAbsolute = !_isAbsolute;
+                    }),
+                  }, // TODO: toggle relative & absolute
+                  child: Text('切換成${_isAbsolute ? "相對傾角圖" : "絕對傾角圖"}'),
                 ),
                 const Spacer(),
                 if (_accuracy == null || _accuracy! > 30.0)
