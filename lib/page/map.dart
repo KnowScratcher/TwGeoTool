@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
@@ -15,8 +19,16 @@ class MapPage extends StatefulWidget {
   State<MapPage> createState() => _MapPageState();
 }
 
-class _MapPageState extends State<MapPage> {
-  final MapController _mapController = MapController();
+class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
+  late final AnimatedMapController _animatedMapController =
+      AnimatedMapController(
+        vsync: this,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        cancelPreviousAnimations: true,
+      );
+  late final MapController _mapController =
+      _animatedMapController.mapController;
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
 
@@ -27,10 +39,24 @@ class _MapPageState extends State<MapPage> {
   bool _isSheetVisible = false;
   bool _showInfoPointer = false;
   LatLng _infoPoint = LatLng(0, 0);
+  bool _isMapReady = false;
+  double _compassAngle = 0.0;
+  double? _accuracy;
+  StreamSubscription<CompassEvent?>? _compassSubscription;
 
   @override
   void initState() {
     super.initState();
+    _compassSubscription = FlutterCompass.events?.listen((event) {
+      setState(() {
+        _accuracy = event.accuracy;
+        final heading = event.heading;
+        if (heading != null) {
+          _compassAngle = heading;
+        }
+      });
+    });
+
     // Track panel extent to fade in/out top controls and trigger full-screen UI
     _sheetController.addListener(() {
       final double currentSize = _sheetController.size;
@@ -54,7 +80,9 @@ class _MapPageState extends State<MapPage> {
   @override
   void dispose() {
     _sheetController.dispose();
+    _animatedMapController.dispose();
     _mapController.dispose();
+    _compassSubscription?.cancel();
     super.dispose();
   }
 
@@ -125,6 +153,13 @@ class _MapPageState extends State<MapPage> {
 
   @override
   Widget build(BuildContext context) {
+    final accuracyText = (_accuracy == null)
+        ? "不可用"
+        : (_accuracy == 45)
+        ? "低"
+        : (_accuracy == 30)
+        ? "中"
+        : "高";
     final bool isFullScreen = _sheetExtent > 0.92;
     return Scaffold(
       body: ValueListenableBuilder<Position?>(
@@ -146,6 +181,11 @@ class _MapPageState extends State<MapPage> {
                   maxZoom: 17.0,
                   minZoom: 7.0,
                   onTap: (tapPosition, point) => _fetchGeologyData(point),
+                  onMapReady: () {
+                    setState(() {
+                      _isMapReady = true;
+                    });
+                  },
                 ),
                 children: [
                   TileLayer(
@@ -218,6 +258,19 @@ class _MapPageState extends State<MapPage> {
                     ),
                 ],
               ),
+              if (_isMapReady && position != null)
+                // heading line
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: HeadingLinePainter(
+                        userLocation: currentLatLng,
+                        headingDegrees: _compassAngle,
+                        camera: _mapController.camera,
+                      ),
+                    ),
+                  ),
+                ),
 
               // Floating Action Button (Recenter GPS)
               Positioned(
@@ -230,9 +283,10 @@ class _MapPageState extends State<MapPage> {
                     backgroundColor: const Color(0xFF8E44AD),
                     onPressed: () {
                       if (position != null) {
-                        _mapController.move(
-                          LatLng(position.latitude, position.longitude),
-                          16.0,
+                        _animatedMapController.animateTo(
+                          dest: LatLng(position.latitude, position.longitude),
+                          zoom: 16.0,
+                          rotation: 0.0,
                         );
                       }
                     },
@@ -240,6 +294,81 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
               ),
+
+              if (_isMapReady)
+                Positioned(
+                  top: 60,
+                  right: 24,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: _mapController.camera.rotation == 0.0 ? 0.0 : 1.0,
+                    child: FloatingActionButton(
+                      backgroundColor: const Color(0xFF8E44AD),
+                      onPressed: () {
+                        if (position != null) {
+                          _animatedMapController.animatedRotateTo(0.0);
+                        }
+                      },
+                      child: Transform.rotate(
+                        angle: _mapController.camera.rotation * pi / 180,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.navigation,
+                              color: Colors.white,
+                            ),
+                            Transform.rotate(angle: -_mapController.camera.rotation * pi / 180,child: const Text("N"))
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              if (_accuracy == null || _accuracy! > 15)
+                Positioned(
+                  top: 60,
+                  left: 80,
+                  right: 80,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade800,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '指北針精準度 $accuracyText，請校準',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
               // Top Left Circular Back Button
               Positioned(
@@ -511,5 +640,79 @@ class _MapPageState extends State<MapPage> {
       _buildTitle("位態資訊"),
       ...line2List,
     ];
+  }
+}
+
+class HeadingLinePainter extends CustomPainter {
+  final LatLng userLocation;
+  final double headingDegrees;
+  final MapCamera camera;
+
+  HeadingLinePainter({
+    required this.userLocation,
+    required this.headingDegrees,
+    required this.camera,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.blueAccent
+      ..strokeWidth = 3.0
+      ..strokeCap = StrokeCap.round;
+    final point = camera.latLngToScreenOffset(userLocation);
+    final startOffset = Offset(point.dx.toDouble(), point.dy.toDouble());
+
+    final double screenAngleDegrees = headingDegrees + camera.rotation;
+    final double radians = (screenAngleDegrees - 90) * (pi / 180.0);
+    final double vx = cos(radians);
+    final double vy = sin(radians);
+
+    double minT = double.infinity;
+
+    if (vx > 0) {
+      final t = (size.width - startOffset.dx) / vx;
+      final y = startOffset.dy + t * vy;
+      if (t > 0 && y >= 0 && y <= size.height) {
+        minT = min(minT, t);
+      }
+    }
+    if (vx < 0) {
+      final t = (0 - startOffset.dx) / vx;
+      final y = startOffset.dy + t * vy;
+      if (t > 0 && y >= 0 && y <= size.height) {
+        minT = min(minT, t);
+      }
+    }
+    if (vy > 0) {
+      final t = (size.height - startOffset.dy) / vy;
+      final x = startOffset.dx + t * vx;
+      if (t > 0 && x >= 0 && x <= size.width) {
+        minT = min(minT, t);
+      }
+    }
+    if (vy < 0) {
+      final t = (0 - startOffset.dy) / vy;
+      final x = startOffset.dx + t * vx;
+      if (t > 0 && x >= 0 && x <= size.width) {
+        minT = min(minT, t);
+      }
+    }
+
+    if (minT == double.infinity) return;
+
+    final endOffset = Offset(
+      startOffset.dx + minT * vx,
+      startOffset.dy + minT * vy,
+    );
+
+    canvas.drawLine(startOffset, endOffset, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant HeadingLinePainter oldDelegate) {
+    return oldDelegate.headingDegrees != headingDegrees ||
+        oldDelegate.userLocation != userLocation ||
+        oldDelegate.camera != camera;
   }
 }

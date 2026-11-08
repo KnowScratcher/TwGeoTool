@@ -158,6 +158,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.3.2"
+  flutter_map_animations:
+    dependency: "direct main"
+    description:
+      name: flutter_map_animations
+      sha256: a524e59b077d24bbed2c76bfd12836f8915da0ecdba46b06459af824e72c8f17
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.11.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter

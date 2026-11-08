@@ -115,7 +115,7 @@ class _GeoHomeScreenState extends State<GeoHomeScreen> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      '地質區域',
+                      '區域名稱',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
