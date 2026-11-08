@@ -2,7 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSMotionUsageDescription</key>
+    <string>This app requires access to the accelerator for clinometer.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app needs access to location for geological tracking.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>This app needs access to location for geological tracking.</string>
     <key>NSLocationAlwaysUsageDescription</key>
     <string>This app needs access to location for geological tracking.</string>
