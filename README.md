@@ -9,7 +9,7 @@
 ![Github All Releases](https://img.shields.io/github/downloads/KnowScratcher/TwGeoTool/total.svg)
 ![](https://visitor-badge.laobi.icu/badge?page_id=KnowScratcher.TwGeoTool)
 
-<img src ="./assets/home.png" width="95%">
+<img src ="./assets/home.png" width="50%">
 
 </div>
 
