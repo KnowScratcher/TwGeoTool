@@ -22,11 +22,13 @@
 
 - **🏠 主畫面資訊:** 主畫面直觀呈現當前位置的地質狀況。
 - **🌏 地質圖瀏覽:** 使用地礦中心的開放地質圖API，疊圖在地圖上，掌握即時附近的地質組成。
+- **⬆️ 方向指示線:** 將指北針測得之前方方位繪製成方向指示線，閱讀直觀。
 - **🔍 地質圖查詢:** 點擊地圖可直接調閱該區塊的地層細節與面頁位態數據。
 - **🧭 智慧傾斜儀:** 透過手機量測岩層傾角，系統自動校準傾向，省去調整手機角度的動作。
 - **🗺️ 絕對傾斜儀:** 切換至絕對傾斜模式後，圖形直接對齊地圖方位，簡化繪圖流程。
 
 ## 🖼️ 範例截圖
+
 <table>
   <tr>
     <td align="center">
@@ -38,7 +40,7 @@
       <b>資訊調閱</b>
     </td>
   </tr>
-    <tr>
+  <tr>
     <td align="center">
       <img src="./assets/relative.png" width="49%" alt="相對傾斜儀"><br>
       <b>相對傾斜儀</b>
@@ -48,31 +50,48 @@
       <b>絕對傾斜儀</b>
     </td>
   </tr>
+
+  <tr>
+    <td align="center">
+      <img src="./assets/map2.png" width="49%" alt="相對傾斜儀"><br>
+      <b>指向線</b>
+    </td>
+  </tr>
 </table>
 
 ## 📦 安裝
+
 ### 使用現成的安裝檔
+
 > [!NOTE]
 > 目前僅支援Android手機，ios版本目前正在嘗試編譯中
-> 
+>
 > 若您真的需要ios版本，請自行編譯
-1. 到[Release](https://github.com/KnowScratcher/TwGeoTool/releases)，點開最新版的`Assets`，下載適合您系統的APK。
+
+1. 到[Release](https://github.com/KnowScratcher/TwGeoTool/releases)，點開最新版的`Assets`
+   ，下載適合您系統的APK。
 2. 打開AKP來安裝。
 
 ### 自行編譯
+
 > [!NOTE]
 > 若想要自行編譯，請先安裝[Flutter](https://docs.flutter.dev/install)。
+
 1. 複製專案到電腦
+
 ```bash
 git clone https://github.com/KnowScratcher/TwGeoTool/
 cd TwGeoTool
 ```
+
 2. 編譯檔案
+
 ```bash
 flutter build apk # 編譯適用全部安卓的APK
 flutter build apk --split-per-abi # 編譯更小的安卓的APK(需選擇安裝檔案)
 flutter build ios # 編譯IOS的APP
 ```
+
 編譯結束後可以從訊息中查看執行檔位置。
 
 ## 🤝 貢獻
@@ -89,7 +108,8 @@ flutter build ios # 編譯IOS的APP
 
 ## 🐛 發現bug嗎
 
-如果你遇到bug, 請先檢查 [Issues](https://github.com/KnowScratcher/TwGeoTool/issues)。若這個不是已被回報問題，請按下`New Issue`:
+如果你遇到bug, 請先檢查 [Issues](https://github.com/KnowScratcher/TwGeoTool/issues)。若這個不是已被回報問題，請按下
+`New Issue`:
 
 在回報的過程中，請注意:
 
