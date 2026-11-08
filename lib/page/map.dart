@@ -79,10 +79,9 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _compassSubscription?.cancel();
     _sheetController.dispose();
     _animatedMapController.dispose();
-    _mapController.dispose();
-    _compassSubscription?.cancel();
     super.dispose();
   }
 
@@ -280,6 +279,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                   duration: const Duration(milliseconds: 200),
                   opacity: _sheetExtent > 0.1 ? 0.0 : 1.0,
                   child: FloatingActionButton(
+                    heroTag: "center",
                     backgroundColor: const Color(0xFF8E44AD),
                     onPressed: () {
                       if (position != null) {
@@ -303,6 +303,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                     duration: const Duration(milliseconds: 200),
                     opacity: _mapController.camera.rotation == 0.0 ? 0.0 : 1.0,
                     child: FloatingActionButton(
+                      heroTag: "rotation",
                       backgroundColor: const Color(0xFF8E44AD),
                       onPressed: () {
                         if (position != null) {
