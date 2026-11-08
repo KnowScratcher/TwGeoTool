@@ -44,11 +44,12 @@ body:
       label: 版本
       description: 你執行的是哪個版本的程式?
       options:
-        - v1.0.0-rc.1+1 (最新)
+        - v1.0.0 (最新)
+        - v1.0.0-rc.1+1
         - v1.0.0-rc.1
         - v1.0.0-alpha.2
         - v1.0.0-alpha.1
-      default: v1.0.0-rc.1+1
+      default: v1.0.0
     validations:
       required: true
   - type: checkboxes
