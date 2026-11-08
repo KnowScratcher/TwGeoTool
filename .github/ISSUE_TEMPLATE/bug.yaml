@@ -28,7 +28,6 @@ body:
     attributes:
       label: 螢幕截圖 / 螢幕錄影
       description: 如果可以，請上傳相關的截圖或螢幕錄影檔案以協助定位問題
-      multiple: true
     validations:
       required: false
   - type: input
@@ -49,7 +48,7 @@ body:
         - v1.0.0-rc.1
         - v1.0.0-alpha.2
         - v1.0.0-alpha.1
-      default: v1.0.0
+      default: 0
     validations:
       required: true
   - type: checkboxes
