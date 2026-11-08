@@ -170,7 +170,10 @@ class _ClinoState extends State<Clino> {
                             alignment: Alignment.topCenter,
                             child: Container(
                               width: 2 + (index % 9 == 0 ? 2 : 0),
-                              height: 12 + (index % 9 == 0 ? 5 : 0) - (index % 2 == 1 ? 3 : 0),
+                              height:
+                                  12 +
+                                  (index % 9 == 0 ? 5 : 0) -
+                                  (index % 2 == 1 ? 3 : 0),
                               color: Colors.white70,
                             ),
                           ),
@@ -209,6 +212,38 @@ class _ClinoState extends State<Clino> {
                           painter: TSymbolPainter(type: type),
                         ),
                       ),
+                      if (_dipAngle >= 2)
+                        Transform.rotate(
+                          angle: _isAbsolute
+                              ? strikeValue / (180 / math.pi)
+                              : -_angle,
+                          child: Transform.translate(
+                            offset: const Offset(80, 0), // Distance from center
+                            child: Transform.rotate(
+                              angle:
+                                  -1 *
+                                  (_isAbsolute
+                                      ? strikeValue / (180 / math.pi)
+                                      : -_angle),
+                              // Counter-rotate text to keep it upright
+                              child: Text(
+                                _dipAngle.toStringAsFixed(0),
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 30,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.white,
+                                      blurRadius: 2,
+                                      offset: Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
