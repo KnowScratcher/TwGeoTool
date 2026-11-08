@@ -1,0 +1,23 @@
+name: 💡 功能需求
+description: 為專案提出新功能或改進建議
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    attributes:
+      label: 功能構想
+      description: 請簡短說明您希望新增的功能
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 解決的痛點
+      description: 這個功能能解決什麼野外調查或操作上的不便
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 建議作法
+      description: 請描述您希望該功能如何呈現或運作
+    validations:
+      required: false

@@ -1,0 +1,61 @@
+name: 🐛 錯誤回報
+description: 回報軟體運作中的錯誤與異常狀況
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: textarea
+    attributes:
+      label: 錯誤描述
+      description: 請清楚說明您遇到的問題
+      placeholder: 在此輸入問題描述...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 重現步驟
+      description: 請列出導致錯誤的詳細步驟
+      placeholder: "1. 前往...\n2. 點擊...\n3. 看到錯誤"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 預期行為
+      description: 請描述原本應該發生什麼事
+    validations:
+      required: true
+  - type: upload
+    id: screenshots
+    attributes:
+      label: 螢幕截圖 / 螢幕錄影
+      description: 如果可以，請上傳相關的截圖或螢幕錄影檔案以協助定位問題
+      multiple: true
+    validations:
+      required: false
+  - type: input
+    attributes:
+      label: 裝置型號與系統版本
+      description: 例如 Google Pixel 7, Android 14
+      placeholder: Google Pixel 7 / Android 14
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: 版本
+      description: 你執行的是哪個版本的程式?
+      options:
+        - v1.0.0-rc.1+1 (最新)
+        - v1.0.0-rc.1
+        - v1.0.0-alpha.2
+        - v1.0.0-alpha.1
+      default: v1.0.0-rc.1+1
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 最後確認
+      description: 請確認這個問題沒有被回報過
+      options:
+        - label: 我確定這個問題沒有被回報過
+          required: true
