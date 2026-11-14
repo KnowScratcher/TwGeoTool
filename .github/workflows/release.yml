@@ -115,7 +115,7 @@ jobs:
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: twgeo-apk
+          name: twgeo-ipa
           path: |
             twgeo-v${{ env.VERSION }}-unsigned.ipa
           
