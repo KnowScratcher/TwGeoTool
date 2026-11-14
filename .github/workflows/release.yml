@@ -52,12 +52,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Remove build id
-        run: sed -i -e 's/-Wl,/-Wl,--build-id=none,/' ${{ steps.flutter-action.outputs.PUB-CACHE-PATH }}/hosted/pub.dev/jni-*/src/CMakeLists.txt
-
-      - name: Generate Hive Adapters
-        run: dart run build_runner build --delete-conflicting-outputs
-
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
 
