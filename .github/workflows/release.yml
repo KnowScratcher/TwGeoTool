@@ -155,7 +155,7 @@ jobs:
           draft: true
           generate_release_notes: true
           overwrite_files: false
-          name: Timety v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
           tag_name: v${{ env.VERSION }}
           files: |
             artifacts/*.apk
