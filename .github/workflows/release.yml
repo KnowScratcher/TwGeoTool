@@ -1,0 +1,169 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+  
+jobs:
+  build_apk:
+    name: Build Android APKs (Split)
+    runs-on: ubuntu-latest
+    permissions: write-all
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Strip the leading 'v'
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Resolved release version: $VERSION"
+
+      - name: Print Version for verification
+        run: echo "Building version ${{ env.VERSION }}"
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        id: flutter-action
+        with:
+          channel: 'stable'
+          flutter-version: '3.44.4'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Remove build id
+        run: sed -i -e 's/-Wl,/-Wl,--build-id=none,/' ${{ steps.flutter-action.outputs.PUB-CACHE-PATH }}/hosted/pub.dev/jni-*/src/CMakeLists.txt
+
+      - name: Generate Hive Adapters
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Decode Keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
+
+      - name: Build Split APKs
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_PATH: release-keystore.jks
+        run: flutter build apk --release --split-per-abi --split-debug-info=build/symbols
+
+      - name: Rename APK Artifacts
+        run: |
+          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk twgeo-v${{ env.VERSION }}-armeabi-v7a.apk
+          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk twgeo-v${{ env.VERSION }}-arm64-v8a.apk
+          mv build/app/outputs/flutter-apk/app-x86_64-release.apk twgeo-v${{ env.VERSION }}-x86_64.apk
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: twgeo-apk
+          path: |
+            twgeo-v${{ env.VERSION }}-armeabi-v7a.apk
+            twgeo-v${{ env.VERSION }}-arm64-v8a.apk
+            twgeo-v${{ env.VERSION }}-x86_64.apk
+
+  build-ios-unsigned:
+    name: Build Unsigned iOS IPA
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Strip the leading 'v'
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Resolved release version: $VERSION"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build unsigned iOS app
+        run: flutter build ios --release --no-codesign
+
+      - name: Package into unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r twgeo-v${{ env.VERSION }}-unsigned.ipa Payload/
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: twgeo-apk
+          path: |
+            twgeo-v${{ env.VERSION }}-unsigned.ipa
+          
+  upload_to_release:
+    name: Upload to GitHub Release
+    runs-on: ubuntu-latest
+    permissions: write-all
+    needs: [build_apk, build-ios-unsigned]
+    steps:
+      - name: Set up Version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Strip the leading 'v'
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Resolved release version: $VERSION"
+          
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create attestation for build
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            artifacts/*.apk
+            artifacts/*.ipa
+
+      - name: Release to GitHub
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          generate_release_notes: true
+          overwrite_files: false
+          name: Timety v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          files: |
+            artifacts/*.apk
+            artifacts/*.ipa
+            
